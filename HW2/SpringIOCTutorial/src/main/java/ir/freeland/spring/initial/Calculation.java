@@ -9,5 +9,9 @@ public class Calculation {
     Display display = new Display();
 
     display.output(String.format("2 + 3 = %d", result));
+
+    Print print = new Print();
+
+    print.doPrint("Printing was done successfully!");
   }
 }
