@@ -7,14 +7,17 @@
 
   <bean id="display" class="ir.freeland.spring.initialspring.xml.Display"/>
   <bean id="calculator" class="ir.freeland.spring.initialspring.xml.Calculator"/>
+  <bean id="print" class="ir.freeland.spring.initialspring.xml.Print"/>
 
   <bean id="calculationConstructorInjection" class="ir.freeland.spring.initialspring.xml.CalculationConstructorInjection">
     <constructor-arg name="calculator" ref="calculator"/>
     <constructor-arg name="display" ref="display"/>
+    <constructor-arg name="print" ref="print"/>
   </bean>
 
   <bean id="calculationSetterInjection" class="ir.freeland.spring.initialspring.xml.CalculationSetterInjection">
     <property name="calculator" ref="calculator"/>
     <property name="display" ref="display"/>
+    <property name="print" ref="print"/>
   </bean>
 </beans>
