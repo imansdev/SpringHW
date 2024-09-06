@@ -8,7 +8,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,69 +23,100 @@ public class AppController {
     @Autowired
     private Digi digi;
 
+
+    @ModelAttribute("catalogs")
+    public List<Catalog> getCatalogs() {
+        return Arrays.asList(Catalog.values());
+    }
+
     @PostMapping("/item/create")
-    @ResponseBody
-    public Items createItem(@RequestBody Items item) {
+    public String createItem(@ModelAttribute @Validated Items item, BindingResult result) {
+        if (result.hasErrors()) {
+            return "form";
+        }
         digi.saveItem(item);
-        return item;
+        return "redirect:/api/items";
+    }
+
+    @GetMapping("/item")
+    public String createItemForm(Model model) {
+        model.addAttribute("item", new Items());
+        return "form";
     }
 
     @GetMapping("/items")
-    @ResponseBody
-    public List<Items> listItems() {
-        return digi.getAllItems();
+    public String listItems(Model model) {
+        model.addAttribute("items", digi.getAllItems());
+        return "list";
     }
 
     @GetMapping(value = "/item/{id}")
-    @ResponseBody
-    public Items getItemById(@PathVariable long id) {
+    public String getItemById(@PathVariable long id, Model model) {
         Optional<Items> item = digi.searchById(id);
-        return item.get();
+        if (item.isPresent()) {
+            model.addAttribute("item", item.get());
+            return "view";
+        } else {
+            return "NOT FOUND";
+        }
     }
 
     @PutMapping("/item/{id}/update")
-    @ResponseBody
-    public Items updateItem(@PathVariable long id, @RequestBody Items item) {
-        Optional<Items> updatedItem = digi.updateItemById(id, item);
-        return updatedItem.get();
+    public String updateItem(@PathVariable long id, @ModelAttribute @Validated Items item,
+            BindingResult result) {
+        if (result.hasErrors()) {
+            return "view";
+        }
+        digi.updateItemById(id, item);
+        return "redirect:/api/items";
+    }
+
+    @GetMapping("/item/{id}/edit")
+    public String editItemForm(@PathVariable long id, Model model) {
+        Optional<Items> item = digi.searchById(id);
+        if (item.isPresent()) {
+            model.addAttribute("item", item.get());
+            return "view";
+        } else {
+            return "redirect:/api/items";
+        }
     }
 
     @DeleteMapping(value = "/item/{id}/delete")
-    @ResponseBody
     public String deleteItemById(@PathVariable long id) {
         boolean deleted = digi.deleteItemById(id);
         if (deleted) {
-            return "item has been deleted";
+            return "redirect:/api/items";
         } else {
             return "notFound";
         }
     }
 
     @GetMapping(value = "*")
-    @ResponseBody
     public String notFoundPage() {
         return "notFound";
     }
 
+
+
     @GetMapping("/items/filter")
-    @ResponseBody
-    public List<Items> filterItems(@RequestParam(required = false) String name,
-            @RequestParam(required = false) Catalog catalog) {
+    public String filterItems(@RequestParam(required = false) String name,
+            @RequestParam(required = false) Catalog catalog, Model model) {
         List<Items> filteredItems = digi.getItemsByNameAndCatalog(name, catalog);
-        return filteredItems;
+        model.addAttribute("items", filteredItems);
+        return "list";
     }
 
     @PostMapping("/item/{id}/corrupt")
-    @ResponseBody
     public String moveItemToCorrupted(@PathVariable long id, @RequestParam String reason) {
         digi.moveItemToCorrupted(id, reason);
-        return "item has been moved to corrupte items list";
+        return "redirect:/api/items";
     }
 
     @GetMapping("/corruptedItems")
-    @ResponseBody
-    public List<CorruptedItems> listCorruptedItems() {
-        return digi.getAllCorruptedItems();
+    public String listCorruptedItems(Model model) {
+        model.addAttribute("corruptedItems", digi.getAllCorruptedItems());
+        return "corrupted-list";
     }
 
     @GetMapping("/corrupted/{id}")
@@ -93,22 +128,20 @@ public class AppController {
     }
 
     @PutMapping("/corrupted/{id}/update")
-    @ResponseBody
     public String updateCorruptedItemReason(@PathVariable long id, @RequestParam String reason) {
         boolean updated = digi.updateCorruptedItemReason(id, reason);
         if (updated) {
-            return "corrupted item has been updated";
+            return "redirect:/api/corruptedItems";
         } else {
-            return "notFound";
+            return "NOT FOUND";
         }
     }
 
     @DeleteMapping("/corrupted/{id}/delete")
-    @ResponseBody
     public String deleteCorruptedItem(@PathVariable long id) {
         boolean deleted = digi.deleteCorruptedItem(id);
         if (deleted) {
-            return "corrupted item has been deleted from corrupted items list";
+            return "redirect:/api/corruptedItems";
         } else {
             return "notFound";
         }
