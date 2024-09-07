@@ -4,6 +4,7 @@ import com.digi.app.sources.dao.Digi;
 import com.digi.app.sources.model.Catalog;
 import com.digi.app.sources.model.CorruptedItems;
 import com.digi.app.sources.model.Items;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -45,8 +46,31 @@ public class AppController {
     }
 
     @GetMapping("/items")
-    public String listItems(Model model) {
-        model.addAttribute("items", digi.getAllItems());
+    public String listItems(HttpServletRequest request, Model model) {
+        String name = request.getParameter("name");
+        String catalogParam = request.getParameter("catalog");
+
+        if (name == null && (catalogParam == null || catalogParam.isEmpty())) {
+            model.addAttribute("items", digi.getAllItems());
+            return "list";
+        }
+        /*
+         * if catalog parameter is empty, and the Catalog.valueOf method throws an
+         * IllegalArgumentException when it tries to convert an empty string to an enum constant
+         */
+        Catalog catalog = null;
+        if (catalogParam != null && !catalogParam.isEmpty()) {
+            try {
+                catalog = Catalog.valueOf(catalogParam.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // Handle invalid catalog value
+                model.addAttribute("error", "Invalid catalog value");
+                return "list";
+            }
+        }
+
+        List<Items> filteredItems = digi.getItemsByNameAndCatalog(name, catalog);
+        model.addAttribute("items", filteredItems);
         return "list";
     }
 
@@ -97,15 +121,13 @@ public class AppController {
         return "notFound";
     }
 
-
-
-    @GetMapping("/items/filter")
-    public String filterItems(@RequestParam(required = false) String name,
-            @RequestParam(required = false) Catalog catalog, Model model) {
-        List<Items> filteredItems = digi.getItemsByNameAndCatalog(name, catalog);
-        model.addAttribute("items", filteredItems);
-        return "list";
-    }
+    // @GetMapping("/items/filter")
+    // public String filterItems(@RequestParam(required = false) String name,
+    // @RequestParam(required = false) Catalog catalog, Model model) {
+    // List<Items> filteredItems = digi.getItemsByNameAndCatalog(name, catalog);
+    // model.addAttribute("items", filteredItems);
+    // return "list";
+    // }
 
     @PostMapping("/item/{id}/corrupt")
     public String moveItemToCorrupted(@PathVariable long id, @RequestParam String reason) {

@@ -10,7 +10,7 @@ uri="http://java.sun.com/jsp/jstl/core" %>
 
   <body>
     <h2>Items List</h2>
-    <form action="/api/items/filter" method="get">
+    <form action="/api/items" method="get">
       <input type="text" name="name" placeholder="Filter by name" />
       <select name="catalog">
         <option value="">All Catalogs</option>
